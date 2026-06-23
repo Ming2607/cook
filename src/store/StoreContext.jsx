@@ -2,30 +2,52 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { DEFAULT_CATEGORIES, DEFAULT_DISHES } from '../data/defaults'
 
 const STORAGE_KEY = 'cixiong-shuangchu-data'
+const DATA_VERSION = 2
 
 const StoreContext = createContext(null)
+
+function migrate(data) {
+  const existingNames = new Set((data.categories || []).map((c) => c.name))
+  const merged = [...(data.categories || [])]
+  for (const cat of DEFAULT_CATEGORIES) {
+    if (!existingNames.has(cat.name)) {
+      merged.push({ ...cat, sortOrder: merged.length })
+    }
+  }
+  merged.forEach((c) => {
+    if (!c.group) c.group = '配菜'
+  })
+  return {
+    version: DATA_VERSION,
+    categories: merged,
+    dishes: data.dishes?.length ? data.dishes : DEFAULT_DISHES,
+  }
+}
 
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const data = JSON.parse(raw)
+      if (data.version !== DATA_VERSION) return migrate(data)
+      return data
+    }
   } catch {
     /* ignore */
   }
-  return { categories: DEFAULT_CATEGORIES, dishes: DEFAULT_DISHES }
+  return { version: DATA_VERSION, categories: DEFAULT_CATEGORIES, dishes: DEFAULT_DISHES }
 }
 
 function saveData(categories, dishes) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories, dishes }))
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: DATA_VERSION, categories, dishes }))
 }
 
 export function StoreProvider({ children }) {
-  const [categories, setCategories] = useState(() => loadData().categories)
-  const [dishes, setDishes] = useState(() => loadData().dishes)
+  const initial = loadData()
+  const [categories, setCategories] = useState(initial.categories)
+  const [dishes, setDishes] = useState(initial.dishes)
   const [cart, setCart] = useState({})
-  const [activeCategoryId, setActiveCategoryId] = useState(
-    () => loadData().categories[0]?.id ?? null
-  )
+  const [activeCategoryId, setActiveCategoryId] = useState(initial.categories[0]?.id ?? null)
 
   useEffect(() => {
     saveData(categories, dishes)
@@ -35,7 +57,7 @@ export function StoreProvider({ children }) {
 
   const addCategory = (cat) => {
     const id = `cat-${Date.now()}`
-    setCategories((prev) => [...prev, { ...cat, id, sortOrder: prev.length }])
+    setCategories((prev) => [...prev, { group: '配菜', ...cat, id, sortOrder: prev.length }])
     return id
   }
 

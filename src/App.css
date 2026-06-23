@@ -8,18 +8,12 @@
   position: relative;
 }
 
-.menu-page {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  padding-bottom: calc(56px + env(safe-area-inset-bottom));
-}
-
 .app-header {
-  padding: 14px 16px 10px;
-  padding-top: calc(14px + env(safe-area-inset-top));
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  padding-top: calc(12px + env(safe-area-inset-top));
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
   flex-shrink: 0;
@@ -27,11 +21,29 @@
 
 .app-title {
   font-family: var(--font-serif);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 6px;
+  letter-spacing: 4px;
   margin: 0;
   color: var(--accent-gold);
+}
+
+.my-entry-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-gold);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--accent-gold);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.my-entry-btn:active {
+  background: var(--accent-gold);
+  color: var(--bg-deep);
 }
 
 .menu-content {
@@ -39,4 +51,5 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
 }

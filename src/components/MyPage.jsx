@@ -1,22 +1,22 @@
 import { useState } from 'react'
 import { useStore } from '../store/StoreContext'
-import { MENU_SECTIONS } from '../data/defaults'
+import { CATEGORY_GROUPS, MENU_SECTIONS } from '../data/defaults'
 import { compressImage } from '../utils/image'
 import './MyPage.css'
 
 function CategoryManager() {
   const { categories, addCategory, updateCategory, deleteCategory } = useStore()
   const [editing, setEditing] = useState(null)
-  const [form, setForm] = useState({ name: '', menuSection: '主菜' })
+  const [form, setForm] = useState({ name: '', group: '配菜', menuSection: '主菜' })
 
   const startAdd = () => {
     setEditing('new')
-    setForm({ name: '', menuSection: '主菜' })
+    setForm({ name: '', group: '配菜', menuSection: '主菜' })
   }
 
   const startEdit = (cat) => {
     setEditing(cat.id)
-    setForm({ name: cat.name, menuSection: cat.menuSection })
+    setForm({ name: cat.name, group: cat.group || '配菜', menuSection: cat.menuSection })
   }
 
   const save = () => {
@@ -39,10 +39,20 @@ function CategoryManager() {
         <div className="inline-form">
           <input
             type="text"
-            placeholder="分类名称，如：凉菜"
+            placeholder="分类名称，如：前菜冷盘"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
+          <select
+            value={form.group}
+            onChange={(e) => setForm({ ...form, group: e.target.value })}
+          >
+            {CATEGORY_GROUPS.map((g) => (
+              <option key={g} value={g}>
+                侧边栏分组：{g}
+              </option>
+            ))}
+          </select>
           <select
             value={form.menuSection}
             onChange={(e) => setForm({ ...form, menuSection: e.target.value })}
@@ -69,7 +79,7 @@ function CategoryManager() {
           <li key={cat.id} className="manage-item">
             <div className="item-info">
               <span className="item-name">{cat.name}</span>
-              <span className="item-meta">{cat.menuSection}</span>
+              <span className="item-meta">{cat.group} · {cat.menuSection}</span>
             </div>
             <div className="item-actions">
               <button type="button" onClick={() => startEdit(cat)}>
@@ -191,15 +201,22 @@ function DishManager() {
   )
 }
 
-export default function MyPage() {
+export default function MyPage({ onClose }) {
   return (
-    <div className="my-page">
-      <header className="my-header">
-        <h1>我的</h1>
-        <p>管理分类与菜品，数据保存在本机浏览器</p>
-      </header>
-      <CategoryManager />
-      <DishManager />
+    <div className="my-overlay" onClick={onClose}>
+      <div className="my-page" onClick={(e) => e.stopPropagation()}>
+        <header className="my-header">
+          <div>
+            <h1>我的</h1>
+            <p>管理分类与菜品，数据保存在本机浏览器</p>
+          </div>
+          <button type="button" className="my-close-btn" onClick={onClose} aria-label="关闭">
+            ×
+          </button>
+        </header>
+        <CategoryManager />
+        <DishManager />
+      </div>
     </div>
   )
 }
