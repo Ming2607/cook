@@ -286,11 +286,44 @@
 .manage-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 12px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s, background 0.15s;
+  touch-action: pan-y;
+}
+
+.drag-handle {
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  user-select: none;
+  touch-action: none;
+  opacity: 0.55;
+}
+
+.sortable-dragging {
+  opacity: 0.92;
+  transform: scale(1.02);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-color: var(--accent-gold);
+  z-index: 2;
+  position: relative;
+}
+
+.sortable-dragging .drag-handle {
+  color: var(--accent-gold);
+  opacity: 1;
+}
+
+.sortable-over {
+  border-color: var(--accent-gold);
+  background: rgba(212, 168, 83, 0.1);
 }
 
 .item-info {
@@ -339,12 +372,6 @@
   flex-shrink: 0;
 }
 
-.dish-manage-item {
-  flex-wrap: wrap;
-}
-
 .dish-manage-item .item-actions {
-  width: 100%;
-  justify-content: flex-end;
-  padding-top: 4px;
+  flex-shrink: 0;
 }

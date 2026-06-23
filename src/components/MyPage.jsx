@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { CATEGORY_GROUPS, MENU_SECTIONS } from '../data/defaults'
 import { compressImage } from '../utils/image'
+import SortableList from './SortableList'
 import './MyPage.css'
 
 function CategoryManager() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useStore()
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useStore()
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState({ name: '', group: '配菜', menuSection: '主菜' })
 
@@ -29,7 +30,7 @@ function CategoryManager() {
   return (
     <section className="my-section">
       <div className="section-header">
-        <span className="section-count">共 {categories.length} 个分类</span>
+        <span className="section-count">共 {categories.length} 个分类 · 长按拖动排序</span>
         <button type="button" className="text-btn" onClick={startAdd}>
           + 新增
         </button>
@@ -74,9 +75,12 @@ function CategoryManager() {
         </div>
       )}
 
-      <ul className="manage-list">
-        {categories.map((cat) => (
-          <li key={cat.id} className="manage-item">
+      <SortableList
+        items={categories}
+        keyExtractor={(cat) => cat.id}
+        onReorder={reorderCategories}
+        renderItem={(cat) => (
+          <>
             <div className="item-info">
               <span className="item-name">{cat.name}</span>
               <span className="item-meta">{cat.group} · {cat.menuSection}</span>
@@ -89,15 +93,15 @@ function CategoryManager() {
                 删除
               </button>
             </div>
-          </li>
-        ))}
-      </ul>
+          </>
+        )}
+      />
     </section>
   )
 }
 
 function DishManager() {
-  const { categories, dishes, addDish, updateDish, deleteDish } = useStore()
+  const { categories, dishes, addDish, updateDish, deleteDish, reorderDishesInCategory } = useStore()
   const [editing, setEditing] = useState(null)
   const [filterCategory, setFilterCategory] = useState('all')
   const [form, setForm] = useState({ name: '', categoryId: '', image: '' })
@@ -106,7 +110,9 @@ function DishManager() {
     return categories
       .map((cat) => ({
         category: cat,
-        dishes: dishes.filter((d) => d.categoryId === cat.id),
+        dishes: dishes
+          .filter((d) => d.categoryId === cat.id)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
       }))
       .filter((g) => g.dishes.length > 0)
       .filter((g) => filterCategory === 'all' || g.category.id === filterCategory)
@@ -144,7 +150,7 @@ function DishManager() {
   return (
     <section className="my-section">
       <div className="section-header">
-        <span className="section-count">共 {dishes.length} 道菜品</span>
+        <span className="section-count">共 {dishes.length} 道菜品 · 长按拖动排序</span>
         <button type="button" className="text-btn" onClick={startAdd} disabled={categories.length === 0}>
           + 新增
         </button>
@@ -221,9 +227,14 @@ function DishManager() {
               <span className="group-name">{category.name}</span>
               <span className="group-meta">{category.group}</span>
             </h3>
-            <ul className="manage-list dish-manage-list">
-              {catDishes.map((dish) => (
-                <li key={dish.id} className="manage-item dish-manage-item">
+            <SortableList
+              items={catDishes}
+              keyExtractor={(dish) => dish.id}
+              className="manage-list dish-manage-list"
+              itemClassName="manage-item dish-manage-item"
+              onReorder={(ordered) => reorderDishesInCategory(category.id, ordered)}
+              renderItem={(dish) => (
+                <>
                   <img src={dish.image} alt={dish.name} className="dish-thumb" />
                   <div className="item-info">
                     <span className="item-name">{dish.name}</span>
@@ -237,9 +248,9 @@ function DishManager() {
                       删除
                     </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </>
+              )}
+            />
           </div>
         ))
       )}

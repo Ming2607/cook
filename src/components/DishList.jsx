@@ -3,7 +3,9 @@ import './DishList.css'
 
 export default function DishList() {
   const { dishes, activeCategoryId, getQty, setQty } = useStore()
-  const filtered = dishes.filter((d) => d.categoryId === activeCategoryId)
+  const filtered = dishes
+    .filter((d) => d.categoryId === activeCategoryId)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
   if (!activeCategoryId) {
     return (

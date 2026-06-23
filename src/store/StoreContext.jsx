@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { DEFAULT_CATEGORIES, DEFAULT_DISHES } from '../data/defaults'
 
 const STORAGE_KEY = 'cixiong-shuangchu-data'
-const DATA_VERSION = 3
+const DATA_VERSION = 4
 
 const StoreContext = createContext(null)
 
@@ -24,8 +24,20 @@ function mergeCategories(existing) {
   return merged
 }
 
+function ensureDishSortOrder(dishes) {
+  const counters = {}
+  return dishes.map((d) => {
+    if (d.sortOrder != null) return d
+    const cat = d.categoryId
+    counters[cat] = counters[cat] ?? 0
+    const order = counters[cat]
+    counters[cat] += 1
+    return { ...d, sortOrder: order }
+  })
+}
+
 function mergeDishes(existing) {
-  const dishes = [...(existing || [])]
+  const dishes = ensureDishSortOrder([...(existing || [])])
   const defaultByCategory = Object.fromEntries(DEFAULT_DISHES.map((d) => [d.categoryId, d]))
 
   for (const cat of DEFAULT_CATEGORIES) {
@@ -106,7 +118,11 @@ export function StoreProvider({ children }) {
 
   const addDish = (dish) => {
     const id = `dish-${Date.now()}`
-    setDishes((prev) => [...prev, { ...dish, id }])
+    setDishes((prev) => {
+      const inCat = prev.filter((d) => d.categoryId === dish.categoryId)
+      const maxOrder = inCat.reduce((m, d) => Math.max(m, d.sortOrder ?? 0), -1)
+      return [...prev, { ...dish, id, sortOrder: maxOrder + 1 }]
+    })
     return id
   }
 
@@ -120,6 +136,18 @@ export function StoreProvider({ children }) {
       const next = { ...prev }
       delete next[id]
       return next
+    })
+  }
+
+  const reorderCategories = (ordered) => {
+    setCategories(ordered.map((cat, i) => ({ ...cat, sortOrder: i })))
+  }
+
+  const reorderDishesInCategory = (categoryId, ordered) => {
+    setDishes((prev) => {
+      const others = prev.filter((d) => d.categoryId !== categoryId)
+      const updated = ordered.map((d, i) => ({ ...d, sortOrder: i }))
+      return [...others, ...updated]
     })
   }
 
@@ -163,6 +191,8 @@ export function StoreProvider({ children }) {
         addDish,
         updateDish,
         deleteDish,
+        reorderCategories,
+        reorderDishesInCategory,
         getQty,
         setQty,
         cartTotal,
