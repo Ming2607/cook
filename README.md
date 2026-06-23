@@ -21,13 +21,13 @@ npm run dev
 
 ## 部署到 GitHub Pages
 
-仓库推送到 GitHub 后，在仓库 **Settings → Pages → Build and deployment** 中选择 **GitHub Actions** 作为 Source。
-
-每次推送到 `main` 分支会自动构建并部署。公网地址：
-
+```bash
+npm run deploy
 ```
-https://<你的GitHub用户名>.github.io/cook/
-```
+
+公网地址：**https://Ming2607.github.io/cook/**
+
+每次更新代码后重新执行 `npm run deploy` 即可发布。
 
 
 ## 技术栈
