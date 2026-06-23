@@ -29,21 +29,30 @@
 }
 
 .my-entry-btn {
-  padding: 6px 14px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border-gold);
-  border-radius: var(--radius-full);
-  background: transparent;
+  border-radius: 50%;
+  background: rgba(212, 168, 83, 0.08);
   color: var(--accent-gold);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chef-hat-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .my-entry-btn:active {
   background: var(--accent-gold);
   color: var(--bg-deep);
+  transform: scale(0.95);
 }
 
 .menu-content {
