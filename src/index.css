@@ -1,0 +1,54 @@
+:root {
+  --bg-deep: #1a1410;
+  --bg-elevated: #231c16;
+  --bg-card: #2a221a;
+  --bg-sidebar: #1e1814;
+  --text-primary: #f5e6d3;
+  --text-muted: #9a8b7a;
+  --accent-gold: #d4a853;
+  --border-subtle: rgba(212, 168, 83, 0.12);
+  --border-gold: rgba(212, 168, 83, 0.35);
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+  --font-serif: 'Noto Serif SC', 'Songti SC', serif;
+  --font-sans: 'Noto Sans SC', -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: #0f0c0a;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+button {
+  font-family: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+img {
+  display: block;
+}
