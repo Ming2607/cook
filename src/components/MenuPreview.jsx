@@ -1,10 +1,47 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import html2canvas from 'html2canvas'
 import { useStore } from '../store/StoreContext'
 import { MENU_SECTIONS } from '../data/defaults'
 import './MenuPreview.css'
 
+async function saveMenuImage(element) {
+  const canvas = await html2canvas(element, {
+    backgroundColor: '#faf6f0',
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    height: element.scrollHeight,
+    windowHeight: element.scrollHeight,
+  })
+
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png', 1))
+  if (!blob) throw new Error('生成图片失败')
+
+  const date = new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')
+  const filename = `雌雄双厨-菜单-${date}.png`
+  const file = new File([blob], filename, { type: 'image/png' })
+
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: '雌雄双厨菜单' })
+    return 'shared'
+  }
+
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+  return 'downloaded'
+}
+
 export default function MenuPreview({ onClose }) {
   const { getMenuItems, clearCart } = useStore()
+  const menuPaperRef = useRef(null)
+  const [saving, setSaving] = useState(false)
+  const [saveHint, setSaveHint] = useState('')
 
   const grouped = useMemo(() => {
     const items = getMenuItems()
@@ -26,6 +63,22 @@ export default function MenuPreview({ onClose }) {
     day: 'numeric',
   })
 
+  const handleSave = async () => {
+    if (!menuPaperRef.current || saving) return
+    setSaving(true)
+    setSaveHint('')
+    try {
+      const result = await saveMenuImage(menuPaperRef.current)
+      setSaveHint(result === 'shared' ? '已通过分享保存，可选择「存储图像」' : '图片已下载，请在相册或下载中查看')
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        setSaveHint('保存失败，请重试')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="menu-overlay" onClick={onClose}>
       <div className="menu-sheet" onClick={(e) => e.stopPropagation()}>
@@ -33,7 +86,7 @@ export default function MenuPreview({ onClose }) {
           ×
         </button>
 
-        <div className="menu-paper">
+        <div className="menu-paper" ref={menuPaperRef}>
           <header className="menu-header">
             <div className="menu-ornament">✦</div>
             <h1 className="menu-title">雌雄双厨</h1>
@@ -68,19 +121,25 @@ export default function MenuPreview({ onClose }) {
         </div>
 
         <div className="menu-actions">
-          <button type="button" className="action-btn secondary" onClick={onClose}>
-            继续选菜
+          <button type="button" className="action-btn save-btn" onClick={handleSave} disabled={saving}>
+            {saving ? '生成中…' : '保存到相册'}
           </button>
-          <button
-            type="button"
-            className="action-btn primary"
-            onClick={() => {
-              clearCart()
-              onClose()
-            }}
-          >
-            清空并重置
-          </button>
+          <div className="action-row">
+            <button type="button" className="action-btn secondary" onClick={onClose}>
+              继续选菜
+            </button>
+            <button
+              type="button"
+              className="action-btn secondary"
+              onClick={() => {
+                clearCart()
+                onClose()
+              }}
+            >
+              清空重置
+            </button>
+          </div>
+          {saveHint && <p className="save-hint">{saveHint}</p>}
         </div>
       </div>
     </div>
