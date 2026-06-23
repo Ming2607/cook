@@ -125,29 +125,19 @@
 }
 
 .menu-line {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  padding: 5px 0;
+  padding: 6px 0;
   font-family: var(--font-serif);
   font-size: 15px;
+  text-align: center;
 }
 
 .line-name {
-  flex-shrink: 0;
   color: #2c2418;
 }
 
 .line-qty {
   font-size: 12px;
   color: #8b7355;
-}
-
-.line-dots {
-  flex: 1;
-  border-bottom: 1px dotted #c4a882;
-  min-width: 20px;
-  margin-bottom: 3px;
 }
 
 .menu-footer {

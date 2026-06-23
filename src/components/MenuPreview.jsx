@@ -106,7 +106,6 @@ export default function MenuPreview({ onClose }) {
                         {dish.name}
                         {qty > 1 && <span className="line-qty"> ×{qty}</span>}
                       </span>
-                      <span className="line-dots" aria-hidden="true" />
                     </li>
                   ))}
                 </ul>
