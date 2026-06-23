@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store/StoreContext'
 import { CATEGORY_GROUPS, MENU_SECTIONS } from '../data/defaults'
 import { compressImage } from '../utils/image'
@@ -29,7 +29,7 @@ function CategoryManager() {
   return (
     <section className="my-section">
       <div className="section-header">
-        <h2>菜品分类</h2>
+        <span className="section-count">共 {categories.length} 个分类</span>
         <button type="button" className="text-btn" onClick={startAdd}>
           + 新增
         </button>
@@ -99,11 +99,23 @@ function CategoryManager() {
 function DishManager() {
   const { categories, dishes, addDish, updateDish, deleteDish } = useStore()
   const [editing, setEditing] = useState(null)
+  const [filterCategory, setFilterCategory] = useState('all')
   const [form, setForm] = useState({ name: '', categoryId: '', image: '' })
+
+  const groupedDishes = useMemo(() => {
+    return categories
+      .map((cat) => ({
+        category: cat,
+        dishes: dishes.filter((d) => d.categoryId === cat.id),
+      }))
+      .filter((g) => g.dishes.length > 0)
+      .filter((g) => filterCategory === 'all' || g.category.id === filterCategory)
+  }, [categories, dishes, filterCategory])
 
   const startAdd = () => {
     setEditing('new')
-    setForm({ name: '', categoryId: categories[0]?.id || '', image: '' })
+    const defaultCat = filterCategory !== 'all' ? filterCategory : categories[0]?.id || ''
+    setForm({ name: '', categoryId: defaultCat, image: '' })
   }
 
   const startEdit = (dish) => {
@@ -132,10 +144,35 @@ function DishManager() {
   return (
     <section className="my-section">
       <div className="section-header">
-        <h2>我的菜品</h2>
+        <span className="section-count">共 {dishes.length} 道菜品</span>
         <button type="button" className="text-btn" onClick={startAdd} disabled={categories.length === 0}>
           + 新增
         </button>
+      </div>
+
+      <div className="category-filter" role="tablist" aria-label="按分类筛选">
+        <button
+          type="button"
+          className={`filter-chip ${filterCategory === 'all' ? 'active' : ''}`}
+          onClick={() => setFilterCategory('all')}
+        >
+          全部
+        </button>
+        {categories.map((cat) => {
+          const count = dishes.filter((d) => d.categoryId === cat.id).length
+          if (count === 0) return null
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              className={`filter-chip ${filterCategory === cat.id ? 'active' : ''}`}
+              onClick={() => setFilterCategory(cat.id)}
+            >
+              {cat.name}
+              <span className="chip-count">{count}</span>
+            </button>
+          )
+        })}
       </div>
 
       {editing && (
@@ -175,47 +212,70 @@ function DishManager() {
         </div>
       )}
 
-      <ul className="manage-list dish-manage-list">
-        {dishes.map((dish) => {
-          const cat = categories.find((c) => c.id === dish.categoryId)
-          return (
-            <li key={dish.id} className="manage-item dish-manage-item">
-              <img src={dish.image} alt={dish.name} className="dish-thumb" />
-              <div className="item-info">
-                <span className="item-name">{dish.name}</span>
-                <span className="item-meta">{cat?.name || '未分类'}</span>
-              </div>
-              <div className="item-actions">
-                <button type="button" onClick={() => startEdit(dish)}>
-                  编辑
-                </button>
-                <button type="button" className="danger" onClick={() => deleteDish(dish.id)}>
-                  删除
-                </button>
-              </div>
-            </li>
-          )
-        })}
-      </ul>
+      {groupedDishes.length === 0 ? (
+        <p className="empty-hint">暂无菜品，点击右上角新增</p>
+      ) : (
+        groupedDishes.map(({ category, dishes: catDishes }) => (
+          <div key={category.id} className="dish-group">
+            <h3 className="dish-group-title">
+              <span className="group-name">{category.name}</span>
+              <span className="group-meta">{category.group}</span>
+            </h3>
+            <ul className="manage-list dish-manage-list">
+              {catDishes.map((dish) => (
+                <li key={dish.id} className="manage-item dish-manage-item">
+                  <img src={dish.image} alt={dish.name} className="dish-thumb" />
+                  <div className="item-info">
+                    <span className="item-name">{dish.name}</span>
+                    <span className="category-tag">{category.name}</span>
+                  </div>
+                  <div className="item-actions">
+                    <button type="button" onClick={() => startEdit(dish)}>
+                      编辑
+                    </button>
+                    <button type="button" className="danger" onClick={() => deleteDish(dish.id)}>
+                      删除
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
     </section>
   )
 }
 
 export default function MyPage({ onClose }) {
+  const [tab, setTab] = useState('categories')
+
   return (
     <div className="my-overlay" onClick={onClose}>
       <div className="my-page" onClick={(e) => e.stopPropagation()}>
-        <header className="my-header">
-          <div>
-            <h1>我的</h1>
-            <p>管理分类与菜品，数据保存在本机浏览器</p>
+        <header className="my-topbar">
+          <div className="my-tabs">
+            <button
+              type="button"
+              className={`my-tab ${tab === 'categories' ? 'active' : ''}`}
+              onClick={() => setTab('categories')}
+            >
+              分类管理
+            </button>
+            <button
+              type="button"
+              className={`my-tab ${tab === 'dishes' ? 'active' : ''}`}
+              onClick={() => setTab('dishes')}
+            >
+              菜品管理
+            </button>
           </div>
           <button type="button" className="my-close-btn" onClick={onClose} aria-label="关闭">
             ×
           </button>
         </header>
-        <CategoryManager />
-        <DishManager />
+
+        {tab === 'categories' ? <CategoryManager /> : <DishManager />}
       </div>
     </div>
   )
