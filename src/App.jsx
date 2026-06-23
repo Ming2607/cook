@@ -3,6 +3,7 @@ import CategorySidebar from './components/CategorySidebar'
 import DishList from './components/DishList'
 import CartBar from './components/CartBar'
 import MyPage from './components/MyPage'
+import ChefHatIcon from './components/ChefHatIcon'
 import './App.css'
 
 export default function App() {
@@ -18,14 +19,7 @@ export default function App() {
           onClick={() => setShowMy(true)}
           aria-label="我的"
         >
-          <span
-            className="chef-hat-icon"
-            style={{
-              WebkitMaskImage: `url(${import.meta.env.BASE_URL}icons/chef-hat.png)`,
-              maskImage: `url(${import.meta.env.BASE_URL}icons/chef-hat.png)`,
-            }}
-            aria-hidden="true"
-          />
+          <ChefHatIcon className="chef-hat-icon" />
         </button>
       </header>
       <div className="menu-content">
