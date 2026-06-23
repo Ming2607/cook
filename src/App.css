@@ -45,8 +45,20 @@
 }
 
 .chef-hat-icon {
-  width: 20px;
-  height: 20px;
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-color: var(--accent-gold);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.my-entry-btn:active .chef-hat-icon {
+  background-color: var(--bg-deep);
 }
 
 .my-entry-btn:active {
