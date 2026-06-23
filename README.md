@@ -19,13 +19,16 @@ npm run dev
 
 手机访问：确保手机和电脑在同一 Wi-Fi，用电脑的局域网 IP 打开 Vite 显示的地址。
 
-## 部署
+## 部署到 GitHub Pages
 
-```bash
-npm run build
+仓库推送到 GitHub 后，在仓库 **Settings → Pages → Build and deployment** 中选择 **GitHub Actions** 作为 Source。
+
+每次推送到 `main` 分支会自动构建并部署。公网地址：
+
+```
+https://<你的GitHub用户名>.github.io/cook/
 ```
 
-将 `dist` 目录部署到任意静态托管（GitHub Pages、Vercel 等）。
 
 ## 技术栈
 
