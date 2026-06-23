@@ -1,34 +1,19 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { DEFAULT_CATEGORIES, DEFAULT_DISHES } from '../data/defaults'
 import {
-  fetchMenu,
-  isCloudEnabled,
-  saveMenu,
-  subscribeMenu,
-} from '../cloud/sync'
+  DEFAULT_CATEGORIES,
+  DEFAULT_DISHES,
+  DEFAULT_MAJOR_CATEGORIES,
+} from '../data/defaults'
+import { fetchMenu, isCloudEnabled, saveMenu, subscribeMenu } from '../cloud/sync'
 import { initCloud } from '../cloud/tcb'
 
 const STORAGE_KEY = 'cixiong-shuangchu-data'
-const DATA_VERSION = 4
+const DATA_VERSION = 5
 
 const StoreContext = createContext(null)
 
 function isPlaceholderImage(image) {
   return !image || image.startsWith('data:image/svg')
-}
-
-function mergeCategories(existing) {
-  const existingNames = new Set((existing || []).map((c) => c.name))
-  const merged = [...(existing || [])]
-  for (const cat of DEFAULT_CATEGORIES) {
-    if (!existingNames.has(cat.name)) {
-      merged.push({ ...cat, sortOrder: merged.length })
-    }
-  }
-  merged.forEach((c) => {
-    if (!c.group) c.group = '配菜'
-  })
-  return merged
 }
 
 function ensureDishSortOrder(dishes) {
@@ -49,13 +34,14 @@ function mergeDishes(existing) {
 
   for (const cat of DEFAULT_CATEGORIES) {
     const inCategory = dishes.filter((d) => d.categoryId === cat.id)
-    if (inCategory.length === 0) {
+    if (inCategory.length === 0 && defaultByCategory[cat.id]) {
       dishes.push({ ...defaultByCategory[cat.id] })
       continue
     }
     for (let i = 0; i < dishes.length; i++) {
       if (dishes[i].categoryId === cat.id && isPlaceholderImage(dishes[i].image)) {
-        dishes[i] = { ...dishes[i], image: defaultByCategory[cat.id].image }
+        const fallback = defaultByCategory[cat.id]
+        if (fallback) dishes[i] = { ...dishes[i], image: fallback.image }
       }
     }
   }
@@ -64,9 +50,20 @@ function mergeDishes(existing) {
 }
 
 function migrate(data) {
-  const categories = mergeCategories(data.categories)
-  const dishes = mergeDishes(data.dishes?.length ? data.dishes : [])
-  return { version: DATA_VERSION, categories, dishes }
+  if (data.version >= 5 && data.majorCategories?.length && data.categories?.length) {
+    return {
+      version: DATA_VERSION,
+      majorCategories: data.majorCategories,
+      categories: data.categories,
+      dishes: mergeDishes(data.dishes),
+    }
+  }
+  return {
+    version: DATA_VERSION,
+    majorCategories: DEFAULT_MAJOR_CATEGORIES,
+    categories: DEFAULT_CATEGORIES,
+    dishes: DEFAULT_DISHES,
+  }
 }
 
 function loadLocalData() {
@@ -80,17 +77,26 @@ function loadLocalData() {
   } catch {
     /* ignore */
   }
-  return { version: DATA_VERSION, categories: DEFAULT_CATEGORIES, dishes: DEFAULT_DISHES }
+  return {
+    version: DATA_VERSION,
+    majorCategories: DEFAULT_MAJOR_CATEGORIES,
+    categories: DEFAULT_CATEGORIES,
+    dishes: DEFAULT_DISHES,
+  }
 }
 
-function saveLocalData(categories, dishes) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: DATA_VERSION, categories, dishes }))
+function saveLocalData(majorCategories, categories, dishes) {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ version: DATA_VERSION, majorCategories, categories, dishes })
+  )
 }
 
 export function StoreProvider({ children }) {
   const cloudEnabled = isCloudEnabled()
   const local = loadLocalData()
 
+  const [majorCategories, setMajorCategories] = useState(local.majorCategories)
   const [categories, setCategories] = useState(local.categories)
   const [dishes, setDishes] = useState(local.dishes)
   const [cart, setCart] = useState({})
@@ -113,15 +119,17 @@ export function StoreProvider({ children }) {
         await initCloud()
         const remote = await fetchMenu()
 
-        if (remote?.categories?.length) {
+        if (remote?.categories?.length && remote?.majorCategories?.length) {
           skipSaveRef.current = true
+          setMajorCategories(remote.majorCategories)
           setCategories(remote.categories)
           setDishes(remote.dishes || [])
           setActiveCategoryId(remote.categories[0]?.id ?? null)
         } else {
           const seed = loadLocalData()
-          await saveMenu(seed.categories, seed.dishes)
+          await saveMenu(seed.majorCategories, seed.categories, seed.dishes)
           skipSaveRef.current = true
+          setMajorCategories(seed.majorCategories)
           setCategories(seed.categories)
           setDishes(seed.dishes)
         }
@@ -129,6 +137,7 @@ export function StoreProvider({ children }) {
         watcher = await subscribeMenu((doc) => {
           if (savingRef.current || !doc?.categories) return
           skipSaveRef.current = true
+          if (doc.majorCategories) setMajorCategories(doc.majorCategories)
           setCategories(doc.categories)
           setDishes(doc.dishes || [])
           setSyncStatus('synced')
@@ -154,7 +163,7 @@ export function StoreProvider({ children }) {
     if (!ready) return undefined
 
     if (!cloudEnabled) {
-      saveLocalData(categories, dishes)
+      saveLocalData(majorCategories, categories, dishes)
       return undefined
     }
 
@@ -169,7 +178,7 @@ export function StoreProvider({ children }) {
       savingRef.current = true
       setSyncStatus('syncing')
       try {
-        const updatedDishes = await saveMenu(categories, dishes)
+        const updatedDishes = await saveMenu(majorCategories, categories, dishes)
         skipSaveRef.current = true
         setDishes(updatedDishes)
         setSyncStatus('synced')
@@ -184,13 +193,46 @@ export function StoreProvider({ children }) {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [categories, dishes, cloudEnabled, ready])
+  }, [majorCategories, categories, dishes, cloudEnabled, ready])
 
+  const sortedMajors = [...majorCategories].sort((a, b) => a.sortOrder - b.sortOrder)
   const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder)
+
+  const addMajorCategory = (name) => {
+    const id = `major-${Date.now()}`
+    setMajorCategories((prev) => [...prev, { id, name, sortOrder: prev.length }])
+    return id
+  }
+
+  const updateMajorCategory = (id, updates) => {
+    setMajorCategories((prev) => prev.map((m) => (m.id === id ? { ...m, ...updates } : m)))
+  }
+
+  const deleteMajorCategory = (id) => {
+    const subIds = categories.filter((c) => c.majorCategoryId === id).map((c) => c.id)
+    setMajorCategories((prev) => prev.filter((m) => m.id !== id))
+    setCategories((prev) => prev.filter((c) => c.majorCategoryId !== id))
+    setDishes((prev) => prev.filter((d) => !subIds.includes(d.categoryId)))
+    setCart((prev) => {
+      const next = { ...prev }
+      dishes.filter((d) => subIds.includes(d.categoryId)).forEach((d) => delete next[d.id])
+      return next
+    })
+    if (subIds.includes(activeCategoryId)) {
+      const remaining = categories.filter((c) => c.majorCategoryId !== id)
+      setActiveCategoryId(remaining[0]?.id ?? null)
+    }
+  }
+
+  const reorderMajorCategories = (ordered) => {
+    setMajorCategories(ordered.map((m, i) => ({ ...m, sortOrder: i })))
+  }
 
   const addCategory = (cat) => {
     const id = `cat-${Date.now()}`
-    setCategories((prev) => [...prev, { group: '配菜', ...cat, id, sortOrder: prev.length }])
+    const inMajor = categories.filter((c) => c.majorCategoryId === cat.majorCategoryId)
+    const sortOrder = inMajor.length
+    setCategories((prev) => [...prev, { ...cat, id, sortOrder }])
     return id
   }
 
@@ -209,6 +251,14 @@ export function StoreProvider({ children }) {
     if (activeCategoryId === id) {
       setActiveCategoryId(categories.find((c) => c.id !== id)?.id ?? null)
     }
+  }
+
+  const reorderCategoriesInMajor = (majorCategoryId, ordered) => {
+    setCategories((prev) => {
+      const others = prev.filter((c) => c.majorCategoryId !== majorCategoryId)
+      const updated = ordered.map((c, i) => ({ ...c, sortOrder: i }))
+      return [...others, ...updated]
+    })
   }
 
   const addDish = (dish) => {
@@ -234,10 +284,6 @@ export function StoreProvider({ children }) {
     })
   }
 
-  const reorderCategories = (ordered) => {
-    setCategories(ordered.map((cat, i) => ({ ...cat, sortOrder: i })))
-  }
-
   const reorderDishesInCategory = (categoryId, ordered) => {
     setDishes((prev) => {
       const others = prev.filter((d) => d.categoryId !== categoryId)
@@ -261,13 +307,19 @@ export function StoreProvider({ children }) {
 
   const clearCart = () => setCart({})
 
+  const getMajorName = (categoryId) => {
+    const cat = categories.find((c) => c.id === categoryId)
+    if (!cat) return '主菜'
+    const major = majorCategories.find((m) => m.id === cat.majorCategoryId)
+    return major?.name || '主菜'
+  }
+
   const getMenuItems = () => {
     const items = []
     for (const [dishId, qty] of Object.entries(cart)) {
       const dish = dishes.find((d) => d.id === dishId)
       if (!dish) continue
-      const cat = categories.find((c) => c.id === dish.categoryId)
-      items.push({ dish, qty, menuSection: cat?.menuSection || '主菜' })
+      items.push({ dish, qty, menuSection: getMajorName(dish.categoryId) })
     }
     return items
   }
@@ -275,24 +327,30 @@ export function StoreProvider({ children }) {
   return (
     <StoreContext.Provider
       value={{
+        majorCategories: sortedMajors,
         categories: sortedCategories,
         dishes,
         cart,
         activeCategoryId,
         setActiveCategoryId,
+        addMajorCategory,
+        updateMajorCategory,
+        deleteMajorCategory,
+        reorderMajorCategories,
         addCategory,
         updateCategory,
         deleteCategory,
+        reorderCategoriesInMajor,
         addDish,
         updateDish,
         deleteDish,
-        reorderCategories,
         reorderDishesInCategory,
         getQty,
         setQty,
         cartTotal,
         clearCart,
         getMenuItems,
+        getMajorName,
         syncStatus,
         cloudEnabled,
         ready,

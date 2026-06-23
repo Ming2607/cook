@@ -1,18 +1,19 @@
-import { CATEGORY_GROUPS } from '../data/defaults'
 import { useStore } from '../store/StoreContext'
 import './CategorySidebar.css'
 
 export default function CategorySidebar() {
-  const { categories, activeCategoryId, setActiveCategoryId } = useStore()
+  const { majorCategories, categories, activeCategoryId, setActiveCategoryId } = useStore()
 
   return (
     <nav className="category-sidebar" aria-label="菜品分类">
-      {CATEGORY_GROUPS.map((group) => {
-        const items = categories.filter((c) => (c.group || '配菜') === group)
+      {majorCategories.map((major) => {
+        const items = categories
+          .filter((c) => c.majorCategoryId === major.id)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
         if (items.length === 0) return null
         return (
-          <div key={group} className="category-group">
-            <div className="category-group-label">{group}</div>
+          <div key={major.id} className="category-group">
+            <div className="category-group-label">{major.name}</div>
             {items.map((cat) => (
               <button
                 key={cat.id}
@@ -26,25 +27,6 @@ export default function CategorySidebar() {
           </div>
         )
       })}
-      {categories
-        .filter((c) => !CATEGORY_GROUPS.includes(c.group))
-        .length > 0 && (
-        <div className="category-group">
-          <div className="category-group-label">其他</div>
-          {categories
-            .filter((c) => !CATEGORY_GROUPS.includes(c.group))
-            .map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                className={`category-item ${activeCategoryId === cat.id ? 'active' : ''}`}
-                onClick={() => setActiveCategoryId(cat.id)}
-              >
-                <span className="category-name">{cat.name}</span>
-              </button>
-            ))}
-        </div>
-      )}
     </nav>
   )
 }

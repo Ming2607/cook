@@ -63,10 +63,11 @@ export async function prepareDishesForCloud(dishes) {
   return prepared
 }
 
-export async function saveMenu(categories, dishes) {
+export async function saveMenu(majorCategories, categories, dishes) {
   const db = await getDb()
   const dishesForCloud = await prepareDishesForCloud(dishes)
   await db.collection(MENU_COL).doc(MENU_DOC).set({
+    majorCategories,
     categories,
     dishes: dishesForCloud,
     updatedAt: Date.now(),
