@@ -1,19 +1,14 @@
 export default function ChefHatIcon({ className }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      className={className}
+      viewBox="0 0 1024 1024"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
       <path
-        d="M6.2 13.2C6.2 9.4 8.4 6.8 10.2 6.5C10.2 4.6 11.2 3.2 12 3.2C12.8 3.2 13.8 4.6 13.8 6.5C15.6 6.8 17.8 9.4 17.8 13.2"
-        stroke="currentColor"
-        strokeWidth="1.55"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M5.5 13.2h13" stroke="currentColor" strokeWidth="1.55" strokeLinecap="round" />
-      <path
-        d="M6.2 13.2v4.3c0 .4.3.7.7.7h10.2c.4 0 .7-.3.7-.7v-4.3"
-        stroke="currentColor"
-        strokeWidth="1.55"
-        strokeLinejoin="round"
+        fill="currentColor"
+        d="M928 768H96c-17.6 0-32 14.4-32 32s14.4 32 32 32h832c17.6 0 32-14.4 32-32s-14.4-32-32-32zM160 736h704c17.7 0 32-14.3 32-32v-32c0-194.1-144.2-354.1-331.2-379.9 7-10.3 11.2-22.7 11.2-36.1 0-35.3-28.7-64-64-64s-64 28.7-64 64c0 13.4 4.1 25.8 11.2 36.1C272.2 317.9 128 477.9 128 672v32c0 17.7 14.3 32 32 32z m75.6-202.2c29.8-59.4 78.8-108.5 138.2-138.2 10.5-5.3 23.3-1 28.6 9.5s1 23.4-9.5 28.6c-51.2 25.6-93.5 68-119.2 119.2-3.7 7.5-11.3 11.8-19.1 11.8-3.2 0-6.5-0.7-9.5-2.3-10.6-5.3-14.8-18.1-9.5-28.6z"
       />
     </svg>
   )
