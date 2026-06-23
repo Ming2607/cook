@@ -2,13 +2,17 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { DEFAULT_CATEGORIES, DEFAULT_DISHES } from '../data/defaults'
 
 const STORAGE_KEY = 'cixiong-shuangchu-data'
-const DATA_VERSION = 2
+const DATA_VERSION = 3
 
 const StoreContext = createContext(null)
 
-function migrate(data) {
-  const existingNames = new Set((data.categories || []).map((c) => c.name))
-  const merged = [...(data.categories || [])]
+function isPlaceholderImage(image) {
+  return !image || image.startsWith('data:image/svg')
+}
+
+function mergeCategories(existing) {
+  const existingNames = new Set((existing || []).map((c) => c.name))
+  const merged = [...(existing || [])]
   for (const cat of DEFAULT_CATEGORIES) {
     if (!existingNames.has(cat.name)) {
       merged.push({ ...cat, sortOrder: merged.length })
@@ -17,11 +21,33 @@ function migrate(data) {
   merged.forEach((c) => {
     if (!c.group) c.group = '配菜'
   })
-  return {
-    version: DATA_VERSION,
-    categories: merged,
-    dishes: data.dishes?.length ? data.dishes : DEFAULT_DISHES,
+  return merged
+}
+
+function mergeDishes(existing) {
+  const dishes = [...(existing || [])]
+  const defaultByCategory = Object.fromEntries(DEFAULT_DISHES.map((d) => [d.categoryId, d]))
+
+  for (const cat of DEFAULT_CATEGORIES) {
+    const inCategory = dishes.filter((d) => d.categoryId === cat.id)
+    if (inCategory.length === 0) {
+      dishes.push({ ...defaultByCategory[cat.id] })
+      continue
+    }
+    for (let i = 0; i < dishes.length; i++) {
+      if (dishes[i].categoryId === cat.id && isPlaceholderImage(dishes[i].image)) {
+        dishes[i] = { ...dishes[i], image: defaultByCategory[cat.id].image }
+      }
+    }
   }
+
+  return dishes
+}
+
+function migrate(data) {
+  const categories = mergeCategories(data.categories)
+  const dishes = mergeDishes(data.dishes?.length ? data.dishes : [])
+  return { version: DATA_VERSION, categories, dishes }
 }
 
 function loadData() {

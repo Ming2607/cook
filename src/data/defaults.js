@@ -24,23 +24,26 @@ export const DEFAULT_CATEGORIES = [
   { id: 'cat-19', name: '茗茶酒饮', group: '甜品饮', menuSection: '饮品', sortOrder: 18 },
 ]
 
-const placeholder = (color, text) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
-      <rect fill="${color}" width="400" height="300"/>
-      <text x="200" y="155" text-anchor="middle" fill="#f5e6d3" font-size="28" font-family="serif">${text}</text>
-    </svg>`
-  )}`
+const dishImg = (file) => `${import.meta.env.BASE_URL}dishes/${file}`
 
 export const DEFAULT_DISHES = [
-  { id: 'dish-1', categoryId: 'cat-01', name: '凉拌黄瓜', image: placeholder('#3d5a4a', '凉拌黄瓜') },
-  { id: 'dish-2', categoryId: 'cat-01', name: '口水鸡', image: placeholder('#4a3d3d', '口水鸡') },
-  { id: 'dish-3', categoryId: 'cat-03', name: '清蒸鲈鱼', image: placeholder('#2d4a5a', '清蒸鲈鱼') },
-  { id: 'dish-4', categoryId: 'cat-04', name: '白切鸡', image: placeholder('#4a4a3d', '白切鸡') },
-  { id: 'dish-5', categoryId: 'cat-07', name: '宫保鸡丁', image: placeholder('#6b2d2d', '宫保鸡丁') },
-  { id: 'dish-6', categoryId: 'cat-07', name: '麻婆豆腐', image: placeholder('#5c3a1e', '麻婆豆腐') },
-  { id: 'dish-7', categoryId: 'cat-08', name: '蜜汁叉烧', image: placeholder('#6b3a2d', '蜜汁叉烧') },
-  { id: 'dish-8', categoryId: 'cat-14', name: '葱油拌面', image: placeholder('#3d4a2d', '葱油拌面') },
-  { id: 'dish-9', categoryId: 'cat-18', name: '杨枝甘露', image: placeholder('#8b6914', '杨枝甘露') },
-  { id: 'dish-10', categoryId: 'cat-18', name: '桂花糕', image: placeholder('#6b1e3c', '桂花糕') },
+  { id: 'dish-01', categoryId: 'cat-01', name: '凉拌黄瓜', image: dishImg('01-liangban-huangua.jpg') },
+  { id: 'dish-02', categoryId: 'cat-02', name: '三文鱼刺身', image: dishImg('02-salmon-sashimi.jpg') },
+  { id: 'dish-03', categoryId: 'cat-03', name: '清蒸鲈鱼', image: dishImg('03-steamed-fish.jpg') },
+  { id: 'dish-04', categoryId: 'cat-04', name: '白切鸡', image: dishImg('04-white-cut-chicken.jpg') },
+  { id: 'dish-05', categoryId: 'cat-05', name: '红烧牛腩', image: dishImg('05-braised-beef.jpg') },
+  { id: 'dish-06', categoryId: 'cat-06', name: '红烧肉', image: dishImg('06-hongshao-rou.jpg') },
+  { id: 'dish-07', categoryId: 'cat-07', name: '宫保鸡丁', image: dishImg('07-kungpao-chicken.jpg') },
+  { id: 'dish-08', categoryId: 'cat-08', name: '蜜汁叉烧', image: dishImg('08-char-siu.jpg') },
+  { id: 'dish-09', categoryId: 'cat-09', name: '清炖狮子头', image: dishImg('09-lions-head.jpg') },
+  { id: 'dish-10', categoryId: 'cat-10', name: '油爆大虾', image: dishImg('10-fried-shrimp.jpg') },
+  { id: 'dish-11', categoryId: 'cat-11', name: '剁椒鱼头', image: dishImg('11-fish-head-chili.jpg') },
+  { id: 'dish-12', categoryId: 'cat-12', name: '蚵仔煎', image: dishImg('12-oyster-omelette.jpg') },
+  { id: 'dish-13', categoryId: 'cat-13', name: '老母鸡汤', image: dishImg('13-chicken-soup.jpg') },
+  { id: 'dish-14', categoryId: 'cat-14', name: '小笼包', image: dishImg('14-xiaolongbao.jpg') },
+  { id: 'dish-15', categoryId: 'cat-15', name: '皮蛋瘦肉粥', image: dishImg('15-congee.jpg') },
+  { id: 'dish-16', categoryId: 'cat-16', name: '清炒时蔬', image: dishImg('16-stir-fry-vegetables.jpg') },
+  { id: 'dish-17', categoryId: 'cat-17', name: '酱牛肉', image: dishImg('17-braised-beef-slices.jpg') },
+  { id: 'dish-18', categoryId: 'cat-18', name: '杨枝甘露', image: dishImg('18-mango-dessert.jpg') },
+  { id: 'dish-19', categoryId: 'cat-19', name: '功夫茶', image: dishImg('19-chinese-tea.jpg') },
 ]
