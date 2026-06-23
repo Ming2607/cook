@@ -1,5 +1,12 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { DEFAULT_CATEGORIES, DEFAULT_DISHES } from '../data/defaults'
+import {
+  fetchMenu,
+  isCloudEnabled,
+  saveMenu,
+  subscribeMenu,
+} from '../cloud/sync'
+import { initCloud } from '../cloud/tcb'
 
 const STORAGE_KEY = 'cixiong-shuangchu-data'
 const DATA_VERSION = 4
@@ -62,7 +69,7 @@ function migrate(data) {
   return { version: DATA_VERSION, categories, dishes }
 }
 
-function loadData() {
+function loadLocalData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -76,20 +83,108 @@ function loadData() {
   return { version: DATA_VERSION, categories: DEFAULT_CATEGORIES, dishes: DEFAULT_DISHES }
 }
 
-function saveData(categories, dishes) {
+function saveLocalData(categories, dishes) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: DATA_VERSION, categories, dishes }))
 }
 
 export function StoreProvider({ children }) {
-  const initial = loadData()
-  const [categories, setCategories] = useState(initial.categories)
-  const [dishes, setDishes] = useState(initial.dishes)
+  const cloudEnabled = isCloudEnabled()
+  const local = loadLocalData()
+
+  const [categories, setCategories] = useState(local.categories)
+  const [dishes, setDishes] = useState(local.dishes)
   const [cart, setCart] = useState({})
-  const [activeCategoryId, setActiveCategoryId] = useState(initial.categories[0]?.id ?? null)
+  const [activeCategoryId, setActiveCategoryId] = useState(local.categories[0]?.id ?? null)
+  const [syncStatus, setSyncStatus] = useState(cloudEnabled ? 'loading' : 'offline')
+  const [ready, setReady] = useState(!cloudEnabled)
+
+  const skipSaveRef = useRef(false)
+  const savingRef = useRef(false)
+  const saveTimerRef = useRef(null)
 
   useEffect(() => {
-    saveData(categories, dishes)
-  }, [categories, dishes])
+    if (!cloudEnabled) return undefined
+
+    let watcher = null
+
+    async function bootstrap() {
+      try {
+        setSyncStatus('loading')
+        await initCloud()
+        const remote = await fetchMenu()
+
+        if (remote?.categories?.length) {
+          skipSaveRef.current = true
+          setCategories(remote.categories)
+          setDishes(remote.dishes || [])
+          setActiveCategoryId(remote.categories[0]?.id ?? null)
+        } else {
+          const seed = loadLocalData()
+          await saveMenu(seed.categories, seed.dishes)
+          skipSaveRef.current = true
+          setCategories(seed.categories)
+          setDishes(seed.dishes)
+        }
+
+        watcher = await subscribeMenu((doc) => {
+          if (savingRef.current || !doc?.categories) return
+          skipSaveRef.current = true
+          setCategories(doc.categories)
+          setDishes(doc.dishes || [])
+          setSyncStatus('synced')
+        })
+
+        setSyncStatus('synced')
+        setReady(true)
+      } catch (err) {
+        console.error('cloud bootstrap failed', err)
+        setSyncStatus('error')
+        setReady(true)
+      }
+    }
+
+    bootstrap()
+
+    return () => {
+      watcher?.close?.()
+    }
+  }, [cloudEnabled])
+
+  useEffect(() => {
+    if (!ready) return undefined
+
+    if (!cloudEnabled) {
+      saveLocalData(categories, dishes)
+      return undefined
+    }
+
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false
+      return undefined
+    }
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+
+    saveTimerRef.current = setTimeout(async () => {
+      savingRef.current = true
+      setSyncStatus('syncing')
+      try {
+        const updatedDishes = await saveMenu(categories, dishes)
+        skipSaveRef.current = true
+        setDishes(updatedDishes)
+        setSyncStatus('synced')
+      } catch (err) {
+        console.error('cloud save failed', err)
+        setSyncStatus('error')
+      } finally {
+        savingRef.current = false
+      }
+    }, 900)
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    }
+  }, [categories, dishes, cloudEnabled, ready])
 
   const sortedCategories = [...categories].sort((a, b) => a.sortOrder - b.sortOrder)
 
@@ -198,6 +293,9 @@ export function StoreProvider({ children }) {
         cartTotal,
         clearCart,
         getMenuItems,
+        syncStatus,
+        cloudEnabled,
+        ready,
       }}
     >
       {children}

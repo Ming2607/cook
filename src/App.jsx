@@ -4,15 +4,30 @@ import DishList from './components/DishList'
 import CartBar from './components/CartBar'
 import MyPage from './components/MyPage'
 import ChefHatIcon from './components/ChefHatIcon'
+import SyncStatus from './components/SyncStatus'
+import { useStore } from './store/StoreContext'
 import './App.css'
 
-export default function App() {
+function AppContent() {
   const [showMy, setShowMy] = useState(false)
+  const { ready } = useStore()
+
+  if (!ready) {
+    return (
+      <div className="app-loading">
+        <p className="app-loading-title">雌雄双厨</p>
+        <p className="app-loading-hint">正在连接云端菜单…</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="app">
+    <>
       <header className="app-header">
-        <h1 className="app-title">雌雄双厨</h1>
+        <div className="app-header-left">
+          <h1 className="app-title">雌雄双厨</h1>
+          <SyncStatus />
+        </div>
         <button
           type="button"
           className="my-entry-btn"
@@ -28,6 +43,14 @@ export default function App() {
       </div>
       <CartBar />
       {showMy && <MyPage onClose={() => setShowMy(false)} />}
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <div className="app">
+      <AppContent />
     </div>
   )
 }
